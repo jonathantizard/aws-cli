@@ -1,67 +1,74 @@
 #!/bin/bash
 
-echo "Set AWS credentials and config"
+echo "====Set AWS credentials and config===="
 read -p 'ACCESS_KEY_ID: ' ACCESS_KEY_ID
 read -sp 'SECRET_ACCESS_KEY: ' SECRECT_ACCESS_KEY
 echo ""
 read -p 'REGION: ' REGION
 read -p 'OUTPUT: ' OUTPUT
 
-echo "Building Image"
+echo "====Cleaning images===="
+docker system prune -af
 
-docker build \
+echo "====Building Image===="
+
+ if docker build \
        -t aws-cli \
        --build-arg ACCESS_KEY_ID=${ACCESS_KEY_ID} \
        --build-arg SECRET_ACCESS_KEY=${SECRECT_ACCESS_KEY} \
        --build-arg REGION=${REGION} \
        --build-arg OUTPUT=${OUTPUT} \
-       --no-cache .
+       --no-cache . ; then
 
-echo "Adding Alias"
+    echo  "====Docker image build successfully===="
+
+else
+
+    echo "====Docker image failed to build.. exiting===="
+    exit
+
+fi
 
 PROFILE="${HOME}/.bash_profile"
 RC="${HOME}/.bashrc"
 ZSHRC="${HOME}/.zshrc"
 
-RCAWSALIAS='alias aws='\''docker run --rm -it -v "$(pwd):/project" aws-cli $(echo "aws " && tty &>/dev/null)'\'''
-RCEBALIAS='alias eb='\''docker run --rm -it -v "$(pwd):/project" aws-cli $(echo "eb " && tty &>/dev/null)'\'''
+AWSALIAS='alias aws='\''docker run --rm -it -v "$(pwd):/project" aws-cli $(echo "aws " && tty &>/dev/null)'\'''
+EBALIAS='alias eb='\''docker run --rm -it -v "$(pwd):/project" aws-cli $(echo "eb " && tty &>/dev/null)'\'''
+SAMALIAS='alias sam='\''docker run --rm -it -v "$(pwd):/project" aws-cli $(echo "sam " && tty &>/dev/null)'\'''
 PROFILEALIAS="[[ -r ~/.bashrc ]] && . ~/.bashrc"
-ZSHALIAS="bash -l"
 
-echo "[AWS Alias]"
+function add_alias {
 
-if grep -qF "${RCAWSALIAS}" ${RC}; then
-    echo "Skipping AWS alias - may already exist"
-else
-    echo ${RCAWSALIAS} >> ${RC} && echo "Added AWS alias tp bashrc"
-fi
+    local aliasName=$1
+    local alias=$2
+    local aliasFile=$3
 
-echo "[EB Alias]"
+    echo -e "[Adding ${aliasName} Alias at ${aliasFile}]"
 
-if grep -qF "${RCEBALIAS}" ${RC}; then
-    echo "Skipping EB Alias - may already exist"
-else
-    echo ${RCEBALIAS} >> ${RC} && echo "Added EB alias to bashrc"
-fi
+    if [ ! -f "${aliasFile}" ] || grep -qF "${alias}" ${aliasFile}; then
+        echo -e "-- Skipping ${aliasName} - may already exist \n"
+    else
+        echo -e ${alias} >> ${aliasFile} && echo "++ Added ${aliasName} alias \n"
+    fi
 
-echo "[MAC Profile]"
+}
 
-#Setup Bash Profile MAC
-if [[ -f $PROFILE ]] && ! grep -qF "${PROFILEALIAS}" ${PROFILE}; then
-    echo ${PROFILEALIAS} > ${PROFILE} \
-    && echo "Created a .bash_profile and inherited .bashrc"
-else
-    echo "Skipping MAC profile - none existant or already added"
-fi
+echo -e "====Adding Alias's==== \n"
 
-echo "[ZSH]"
+add_alias "RC AWS" "${AWSALIAS}" $RC
 
-#Setup ZSH ALL if exist
-if [[ -f ${ZSHRC} ]] && ! grep -qF "${ZSHALIAS}" ${ZSHRC}; then
-    echo ${ZSHALIAS} >> ${ZSHRC} \
-    && echo "Added inherit bash path to .zshrc"
-else
-    echo "Skipping ZSH - none existant or already added"
-fi
+add_alias "RC EB" "${EBALIAS}" $RC
 
-echo "[COMPLETED]"
+add_alias "RC SAM" "${SAMALIAS}" $RC
+
+add_alias "ZSH AWS" "${AWSALIAS}" $ZSHRC
+
+add_alias "ZSH EB" "${EBALIAS}" $ZSHRC
+
+add_alias "ZSH SAM" "${SAMALIAS}" $ZSHRC
+
+add_alias "PROFILE" "${PROFILEALIAS}" $PROFILE
+
+exec $SHELL
+echo "====[RESTARTING SHELL...COMPLETED]===="

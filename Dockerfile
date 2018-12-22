@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM python:2.7-alpine
 
 ARG ACCESS_KEY_ID
 ARG SECRET_ACCESS_KEY
@@ -7,32 +7,29 @@ ARG OUTPUT
 
 ENV AWSCLI_VERSION "1.16.76"
 ENV AWSEB_VERSION "3.14.8"
+ENV AWSSAM_VERSION "0.10.0"
 
-RUN apk -v --update add \
-python \
-py-pip \
-groff \
-less \
-mailcap \
-&& \
-pip install --upgrade pip && \
-pip install setuptools && \
-pip install --upgrade awscli==${AWSCLI_VERSION} && \
-pip install --upgrade awsebcli==${AWSEB_VERSION)
 
-RUN apk add docker
+RUN apk --no-cache add docker
+
+RUN apk add --no-cache --virtual .build-deps gcc musl-dev
+
+RUN pip install awscli && \
+pip install awsebcli && \
+pip install aws-sam-cli
 
 RUN apk add openrc && \
 rc-update add docker boot
 
-RUN rm /var/cache/apk/*
+RUN apk del .build-deps
 
 COPY aws-configure/ /aws-configure
 
-RUN sed -i "s/ACCESS_KEY_ID/${ACCESS_KEY_ID}/g" /aws-configure/credentials
-RUN sed -i "s/SECRET_ACCESS_KEY/${SECRET_ACCESS_KEY}/g" /aws-configure/credentials
-RUN sed -i "s/REGION/${REGION}/g" /aws-configure/config
-RUN sed -i "s/OUTPUT/${OUTPUT}/g" /aws-configure/config
-RUN mkdir ~/.aws
-RUN cp /aws-configure/* ~/.aws/
+RUN sed -i "s/ACCESS_KEY_ID/${ACCESS_KEY_ID}/g" /aws-configure/credentials && \
+    sed -i "s/SECRET_ACCESS_KEY/${SECRET_ACCESS_KEY}/g" /aws-configure/credentials && \
+    sed -i "s/REGION/${REGION}/g" /aws-configure/config && \
+    sed -i "s/OUTPUT/${OUTPUT}/g" /aws-configure/config && \
+    mkdir ~/.aws && \
+    cp /aws-configure/* ~/.aws/
+
 RUN rm -rf /aws-configure
