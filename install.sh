@@ -33,9 +33,9 @@ PROFILE="${HOME}/.bash_profile"
 RC="${HOME}/.bashrc"
 ZSHRC="${HOME}/.zshrc"
 
-AWSALIAS='alias aws='\''docker run --rm -it -v "$(pwd):/project" aws-cli $(echo "aws " && tty &>/dev/null)'\'''
-EBALIAS='alias eb='\''docker run --rm -it -v "$(pwd):/project" aws-cli $(echo "eb " && tty &>/dev/null)'\'''
-SAMALIAS='alias sam='\''docker run --rm -it -v "$(pwd):/project" aws-cli $(echo "sam " && tty &>/dev/null)'\'''
+AWSALIAS='alias aws='\''docker run --rm -it -w "$(pwd)" -v /var/run/docker.sock:/var/run/docker.sock -v "$(pwd):$(pwd)" --network="host" aws-cli $(echo "aws " && tty &>/dev/null)'\'''
+EBALIAS='alias eb='\''docker run --rm -it -w "$(pwd)" -v /var/run/docker.sock:/var/run/docker.sock -v "$(pwd):$(pwd)" --network="host" aws-cli $(echo "eb " && tty &>/dev/null)'\'''
+SAMALIAS='alias sam='\''docker run --rm -it -w "$(pwd)" -v /var/run/docker.sock:/var/run/docker.sock -v "$(pwd):$(pwd)" --network="host" aws-cli $(echo "sam " && tty &>/dev/null)'\'''
 PROFILEALIAS="[[ -r ~/.bashrc ]] && . ~/.bashrc"
 
 function add_alias {
@@ -70,5 +70,6 @@ add_alias "ZSH SAM" "${SAMALIAS}" $ZSHRC
 
 add_alias "PROFILE" "${PROFILEALIAS}" $PROFILE
 
-exec $SHELL
-echo "====[RESTARTING SHELL...COMPLETED]===="
+echo "====[RESTARTING SHELL...COMPLETED]====" && exec $SHELL
+
+

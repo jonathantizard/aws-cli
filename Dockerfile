@@ -8,20 +8,24 @@ ARG OUTPUT
 ENV AWSCLI_VERSION "1.16.76"
 ENV AWSEB_VERSION "3.14.8"
 ENV AWSSAM_VERSION "0.10.0"
+ENV NODE_VERSION "8"
 
 
-RUN apk --no-cache add docker
+RUN apk -vv --no-cache add docker
 
-RUN apk add --no-cache --virtual .build-deps gcc musl-dev
+RUN apk -vv add --no-cache --virtual .build-deps gcc musl-dev
+RUN apk -vv add --no-cache nodejs nodejs-npm
 
 RUN pip install awscli && \
 pip install awsebcli && \
 pip install aws-sam-cli
 
-RUN apk add openrc && \
-rc-update add docker boot
+#RUN apk add openrc && \
+#rc-update add docker boot
 
 RUN apk del .build-deps
+
+RUN rm -rf /root/.cache
 
 COPY aws-configure/ /aws-configure
 
